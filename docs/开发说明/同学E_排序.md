@@ -68,6 +68,7 @@ void BookManager::sortBooks() {
               << "2. 按价格降序（从高到低）\n"
               << "3. 按书名字母顺序\n"
               << "4. 按登录号顺序\n"
+              << "5. 按作者字母顺序\n"
               << "请输入选项: ";
 
     int choice = 0;
@@ -104,6 +105,14 @@ void BookManager::sortBooks() {
                       return a.getLoginId() < b.getLoginId();
                   });
         std::cout << "已按登录号顺序排序。\n";
+        break;
+
+    case 5:  // 按作者字母顺序
+        std::sort(books.begin(), books.end(),
+                  [](const Book& a, const Book& b) {
+                      return a.getAuthor() < b.getAuthor();
+                  });
+        std::cout << "已按作者字母顺序排序。\n";
         break;
 
     default:

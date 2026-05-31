@@ -60,12 +60,16 @@ if (b.getTitle().find(关键字) != std::string_view::npos) {
 void BookManager::searchByTitle(std::string_view title) const {
     bool found = false;  // 记录有没有找到，用来最后给提示
 
+    std::cout << "\n===== 查询结果 =====\n";
     for (const auto& b : books) {
         // 如果这本书的书名里含有关键字
         if (b.getTitle().find(title) != std::string_view::npos) {
             std::cout << "登录号: " << b.getLoginId()
                       << "  书名: " << b.getTitle()
                       << "  作者: " << b.getAuthor()
+                      << "  分类号: " << b.getCategoryId()
+                      << "  出版社: " << b.getPublisher()
+                      << "  出版时间: " << b.getPublishTime()
                       << "  价格: " << b.getPrice() << '\n';
             found = true;
         }
@@ -80,11 +84,15 @@ void BookManager::searchByTitle(std::string_view title) const {
 void BookManager::searchByAuthor(std::string_view author) const {
     bool found = false;
 
+    std::cout << "\n===== 查询结果 =====\n";
     for (const auto& b : books) {
         if (b.getAuthor().find(author) != std::string_view::npos) {
             std::cout << "登录号: " << b.getLoginId()
                       << "  书名: " << b.getTitle()
                       << "  作者: " << b.getAuthor()
+                      << "  分类号: " << b.getCategoryId()
+                      << "  出版社: " << b.getPublisher()
+                      << "  出版时间: " << b.getPublishTime()
                       << "  价格: " << b.getPrice() << '\n';
             found = true;
         }
@@ -128,11 +136,12 @@ B004, C++标准库, Josuttis, TP312, 人民邮电, 2015, 128
 
 选择「5. 按书名查询」，输入 `C++`
 
-**预期输出**：
+**预期输出**（每条会列出全部字段）：
 
 ```text
-登录号: B001  书名: C++Primer  作者: Lippman  价格: 99
-登录号: B004  书名: C++标准库  作者: Josuttis  价格: 128
+===== 查询结果 =====
+登录号: B001  书名: C++Primer  作者: Lippman  分类号: TP312  出版社: 人民邮电  出版时间: 2013  价格: 99
+登录号: B004  书名: C++标准库  作者: Josuttis  分类号: TP312  出版社: 人民邮电  出版时间: 2015  价格: 128
 ```
 
 再试试输入 `Python`，应该只找到一本。
@@ -144,7 +153,8 @@ B004, C++标准库, Josuttis, TP312, 人民邮电, 2015, 128
 **预期输出**：
 
 ```text
-登录号: B001  书名: C++Primer  作者: Lippman  价格: 99
+===== 查询结果 =====
+登录号: B001  书名: C++Primer  作者: Lippman  分类号: TP312  出版社: 人民邮电  出版时间: 2013  价格: 99
 ```
 
 ### 第五步：测试边界情况

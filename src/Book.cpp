@@ -1,7 +1,11 @@
 #include "Book.h"
 
+#include <iomanip>
+#include <istream>
+#include <ostream>
+
 // Book.cpp
-// 数据模型基础实现：仅实现 Book 类的构造函数与 Getter/Setter。
+// 数据模型基础实现：Book 类的构造函数、Getter/Setter 和流操作符。
 
 Book::Book(std::string_view bookId,
            std::string_view title,
@@ -75,3 +79,26 @@ void Book::setPrice(double price) {
     price_ = price;
 }
 
+// 流输出操作符：用 std::quoted 处理可能包含空格的字段
+std::ostream& operator<<(std::ostream& os, const Book& b) {
+    os << std::quoted(std::string(b.bookId_))     << ' '
+       << std::quoted(std::string(b.title_))      << ' '
+       << std::quoted(std::string(b.author_))     << ' '
+       << std::quoted(std::string(b.categoryId_)) << ' '
+       << std::quoted(std::string(b.publisher_))  << ' '
+       << std::quoted(std::string(b.publishTime_)) << ' '
+       << b.price_;
+    return os;
+}
+
+// 流输入操作符：用 std::quoted 读取带引号的字段
+std::istream& operator>>(std::istream& is, Book& b) {
+    is >> std::quoted(b.bookId_)
+       >> std::quoted(b.title_)
+       >> std::quoted(b.author_)
+       >> std::quoted(b.categoryId_)
+       >> std::quoted(b.publisher_)
+       >> std::quoted(b.publishTime_)
+       >> b.price_;
+    return is;
+}

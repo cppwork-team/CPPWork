@@ -8,7 +8,7 @@
 
 **不用担心**：文件读写听起来复杂，但其实就是"把内存的东西写成文本"和"把文本读回内存"。这份文档会把每个步骤都讲清楚，代码可以直接复制。
 
-**设计思路**：我们用最简单的文本格式存储——一行一本书，字段用 `|` 分隔。为什么用 `|` 而不是逗号？因为书名、出版社里可能有逗号，但很少有 `|`，这样不容易出错。
+**设计思路**：`Book` 类已经帮你重载好了流操作符（`<<` 和 `>>`），所以你不用手动拼接或切分字段——读一本书就是 `in >> b`，写一本书就是 `out << b`，跟操作 `std::cin`/`std::cout` 一样简单。字段里即使有空格也不怕，因为底层用 `std::quoted` 自动加了引号。
 
 ## 一、你要做什么（用大白话）
 
@@ -35,11 +35,17 @@ C++ 用 `<fstream>` 这个头文件操作文件：
 `bookId(登录号), title(书名), author(作者), categoryId(分类号), publisher(出版社), publishTime(出版时间), price(价格)`
 
 **4. 文件里怎么存一本书？**
-我们约定：**一行存一本书，7 个字段之间用竖线 `|` 隔开**。比如：
+
+`Book` 类已经重载了流操作符，所以一行存一本书直接 `out << b` 就行。底层用 `std::quoted` 给每个字段加上引号，字段里有空格也不怕。存出来大概长这样（最后一项价格不加引号）：
+
+```text
+"B001" "C++ Primer" "Lippman" "TP312" "人民邮电" "2013-05" 99
 ```
-B001|C++Primer|Lippman|TP312|人民邮电|2013|99
-```
-存的时候按这个格式写，读的时候按 `|` 切开，就能一一对应。
+
+读的时候 `in >> b` 会自动把引号去掉、还原成 7 个字段。
+
+**5. 这两个方法要返回 `bool`**
+头文件里约定 `loadFromFile`/`saveToFile` 返回 `bool`：成功返回 `true`，打不开文件返回 `false`。这样 `main.cpp` 才能知道操作有没有成功。
 
 ## 三、完整代码（可直接复制，建议自己读懂每一行）
 
@@ -50,70 +56,47 @@ B001|C++Primer|Lippman|TP312|人民邮电|2013|99
 
 #include <fstream>    // 文件读写
 #include <iostream>   // 屏幕输出提示
-#include <sstream>    // 把一行字符串按 | 切开
-#include <string>
 
 // Module A: 文件持久化（同学A负责）
 
-// 存档：把内存里所有图书写进文件
-void BookManager::saveToFile(std::string_view filename) const {
-    // 用文件名打开一个「写文件流」。string_view 要转成 string 才能传给 ofstream
-    std::ofstream out{std::string(filename)};
-    if (!out) {  // 打开失败（比如路径不对）
-        std::cout << "无法打开文件，保存失败。\n";
-        return;
-    }
-
-    // 遍历 books 里的每一本书，一行一本，字段用 | 隔开
-    for (const auto& b : books) {
-        out << b.getLoginId()      << '|'
-            << b.getTitle()       << '|'
-            << b.getAuthor()      << '|'
-            << b.getCategoryId()  << '|'
-            << b.getPublisher()   << '|'
-            << b.getPublishTime() << '|'
-            << b.getPrice()       << '\n';   // 每本书末尾换行
-    }
-
-    std::cout << "已保存 " << books.size() << " 条记录到 " << filename << "\n";
-}
-
-// 读档：从文件把图书读回内存
-void BookManager::loadFromFile(std::string_view filename) {
+// 从文件加载图书：用流操作符 in >> b 逐本读取
+bool BookManager::loadFromFile(std::string_view filename) {
+    // string_view 要转成 string 才能传给 ifstream
     std::ifstream in{std::string(filename)};
-    if (!in) {
-        std::cout << "无法打开文件，加载失败。\n";
-        return;
+    if (!in) {  // 打不开（比如文件不存在）
+        std::cout << "无法打开文件：" << filename << "\n";
+        return false;
     }
 
     books.clear();  // 关键！先清空内存，否则会和原来的数据叠加（重复）
 
-    std::string line;
-    while (std::getline(in, line)) {   // 一行一行读
-        if (line.empty()) continue;    // 跳过空行
-
-        // 把这一行按 | 切成 7 段
-        std::stringstream ss{line};
-        std::string parts[7];
-        std::string field;
-        int i = 0;
-        while (i < 7 && std::getline(ss, field, '|')) {
-            parts[i] = field;
-            i++;
-        }
-        if (i < 7) continue;  // 字段不够 7 个，这行格式不对，跳过
-
-        // parts[6] 是价格，是文字，要用 std::stod 转成 double
-        double price = std::stod(parts[6]);
-
-        // 用 7 个字段造一本书，放进 books
-        books.emplace_back(parts[0], parts[1], parts[2],
-                           parts[3], parts[4], parts[5], price);
+    Book b;
+    while (in >> b) {     // 每次读一本书，读不动了就停
+        books.push_back(b);
     }
 
-    std::cout << "已从 " << filename << " 加载 " << books.size() << " 条记录\n";
+    std::cout << "已从 " << filename << " 加载 " << books.size() << " 条记录。\n";
+    return true;
+}
+
+// 保存图书到文件：用流操作符 out << b 逐本写出
+bool BookManager::saveToFile(std::string_view filename) const {
+    std::ofstream out{std::string(filename)};
+    if (!out) {
+        std::cout << "无法打开文件：" << filename << "\n";
+        return false;
+    }
+
+    for (const auto& b : books) {
+        out << b << '\n';   // 每本书一行
+    }
+
+    std::cout << "已保存 " << books.size() << " 条记录到 " << filename << "\n";
+    return true;
 }
 ```
+
+> **为什么这么简洁？** 拼接字段、按分隔符切分、`std::stod` 转价格——这些活儿都被 `Book` 的流操作符（在 [Book.cpp](../../src/Book.cpp) 里）包办了。你只管 `in >> b` 和 `out << b`。
 
 ## 四、怎么测试你的代码
 
@@ -131,8 +114,8 @@ g++.exe -std=c++17 -g src/*.cpp -o build/main.exe
 **编译成功的标志**：没有红色的 `error:` 行。
 
 **常见编译错误**：
-- `error: 'stringstream' is not a member of 'std'`：忘了 `#include <sstream>`
-- `error: 'stod' is not a member of 'std'`：检查是否用了 `-std=c++17` 编译选项
+- `error: 'ifstream' is not a member of 'std'`：忘了 `#include <fstream>`
+- 提示找不到 `operator>>`：检查是否用了 `-std=c++17` 编译选项
 
 ### 第二步：测试保存功能
 1. 启动程序，先添加 1-2 本书（选菜单 3）
@@ -147,16 +130,16 @@ g++.exe -std=c++17 -g src/*.cpp -o build/main.exe
 
 4. 用记事本或 VSCode 打开项目根目录下的 `test_books.txt`
 
-**预期内容**（类似这样）：
+**预期内容**（类似这样，每个字段带引号，价格不带）：
 
 ```text
-B001|C++Primer|Lippman|TP312|人民邮电|2013|99
-B002|Java核心技术|Horstmann|TP312|机械工业|2016|108.5
+"B001" "C++ Primer" "Lippman" "TP312" "人民邮电" "2013-05" 99
+"B002" "Java核心技术" "Horstmann" "TP312" "机械工业" "2016-03" 108.5
 ```
 
 **如果文件是空的**：检查 `saveToFile` 里的循环是否正确执行。
 
-**如果格式不对**：检查输出语句里的 `|` 和 `\n` 是否都写对了。
+**如果格式不对**：确认你写的是 `out << b`，而不是手动拼字段。
 
 ### 第三步：测试加载功能
 1. 退出程序，重新运行 `./build/main.exe`
@@ -166,17 +149,14 @@ B002|Java核心技术|Horstmann|TP312|机械工业|2016|108.5
 **预期输出**：
 
 ```text
-已从 test_books.txt 加载 2 条记录
+已从 test_books.txt 加载 2 条记录。
 ```
 
 4. 选择「4. 浏览全部图书」，确认刚才保存的书都回来了
 
 **如果加载后数量不对**：
 - 数量翻倍？忘了 `books.clear()`
-- 数量为 0？检查文件路径是否正确，或者 `getline` 循环是否有问题
-
-**如果程序崩溃**：
-- 可能是 `std::stod` 遇到了非数字。用记事本检查文件里价格那一列是否都是数字。
+- 数量为 0？检查文件路径是否正确，或者 `in >> b` 循环是否有问题
 
 ### 第四步：边界测试
 - 测试加载一个不存在的文件（应该提示"无法打开文件"）
@@ -186,11 +166,11 @@ B002|Java核心技术|Horstmann|TP312|机械工业|2016|108.5
 ## 五、容易踩的坑
 
 - **忘了 `books.clear()`**：每次加载都会把数据再追加一遍，越加越多。`loadFromFile` 开头一定要清空。
-  
-- **`string_view` 不能直接给 ofstream 当文件名**：必须 `std::string(filename)` 包一下（代码里已经处理）。
-  
-- **`std::stod` 遇到非数字会崩**：如果文件被手动改坏了，价格那一段不是数字就会出错。初学阶段先保证自己存的格式正确即可。
-  
+
+- **`string_view` 不能直接给 ifstream/ofstream 当文件名**：必须 `std::string(filename)` 包一下（代码里已经处理）。
+
+- **别忘了 `return true/false`**：头文件约定这两个方法返回 `bool`。打不开文件时 `return false`，正常做完 `return true`，否则 `main.cpp` 没法判断成败。
+
 - **不要去改 `saveToFile` 的 `const`**：它后面那个 `const` 表示「这个方法不会修改图书」，是头文件里规定好的，别删。
 
 ## 六、做完之后

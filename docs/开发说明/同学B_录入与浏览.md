@@ -34,8 +34,8 @@ publisher(出版社), publishTime(出版时间), price(价格)
 用 `books.emplace_back(...)`，把 7 个信息按顺序传进去，它就会在数组末尾造一本新书。
 
 **4. 怎么读用户输入？**
-用 `std::cin >> 变量名;`。比如 `std::cin >> title;` 会把用户敲的内容读进 `title`。
-⚠️ 注意：`std::cin >>` 读到空格就停。所以书名这种最好让用户输入时**不要带空格**（比如用 `C++Primer` 而不是 `C++ Primer`）。这是本项目目前的统一约定。
+用 `std::getline(std::cin, 变量名);` 读一整行。比如 `std::getline(std::cin, title);` 会把用户敲的一整行内容（**包括空格**）读进 `title`。
+⚠️ 注意：因为菜单那边是用 `std::cin >> choice` 读的数字，它会在缓冲区里留下一个换行符。所以在第一次 `getline` 之前，要先 `std::cin.ignore(...)` 把这个换行符清掉，否则第一个字段会读到空行。价格是数字，用 `std::cin >> price`，并加个循环校验防止用户输入非数字。
 
 **5. 怎么遍历所有书？**
 用「范围 for 循环」：
@@ -53,6 +53,7 @@ for (const auto& b : books) {
 #include "BookManager.h"
 
 #include <iostream>
+#include <limits>
 #include <string>
 
 // Module B: 信息录入与浏览（同学B负责）
@@ -62,13 +63,24 @@ void BookManager::addBook() {
     std::string id, title, author, categoryId, publisher, publishTime;
     double price = 0;
 
-    std::cout << "请输入登录号: ";   std::cin >> id;
-    std::cout << "请输入书名: ";     std::cin >> title;
-    std::cout << "请输入作者: ";     std::cin >> author;
-    std::cout << "请输入分类号: ";   std::cin >> categoryId;
-    std::cout << "请输入出版社: ";   std::cin >> publisher;
-    std::cout << "请输入出版时间: "; std::cin >> publishTime;
-    std::cout << "请输入价格: ";     std::cin >> price;
+    // 菜单是用 cin >> choice 读的，缓冲区里残留了一个换行符，
+    // 先清掉，否则下面第一个 getline 会读到空行。
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    std::cout << "请输入登录号: ";   std::getline(std::cin, id);
+    std::cout << "请输入书名: ";     std::getline(std::cin, title);
+    std::cout << "请输入作者: ";     std::getline(std::cin, author);
+    std::cout << "请输入分类号: ";   std::getline(std::cin, categoryId);
+    std::cout << "请输入出版社: ";   std::getline(std::cin, publisher);
+    std::cout << "请输入出版时间: "; std::getline(std::cin, publishTime);
+
+    // 价格是数字，用 cin >> 读，加循环防止用户输入非数字
+    std::cout << "请输入价格: ";
+    while (!(std::cin >> price)) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "价格格式不正确，请重新输入: ";
+    }
 
     // 用 7 个信息造一本新书，直接放进 books 数组末尾
     books.emplace_back(id, title, author, categoryId,
@@ -86,22 +98,23 @@ void BookManager::displayAll() const {
 
     std::cout << "\n===== 全部图书（共 " << books.size() << " 本）=====\n";
     // 表头
-    std::cout << "登录号\t书名\t作者\t分类号\t出版社\t出版时间\t价格\n";
+    std::cout << "登录号\t\t书名\t\t\t作者\t\t分类号\t\t出版社\t\t出版时间\t价格\n";
+    std::cout << std::string(100, '-') << '\n';
 
     // 一本一本打印
     for (const auto& b : books) {
-        std::cout << b.getLoginId()      << '\t'
-                  << b.getTitle()       << '\t'
-                  << b.getAuthor()      << '\t'
-                  << b.getCategoryId()  << '\t'
-                  << b.getPublisher()   << '\t'
-                  << b.getPublishTime() << '\t'
-                  << b.getPrice()       << '\n';
+        std::cout << b.getLoginId()      << "\t\t"
+                  << b.getTitle()        << "\t\t"
+                  << b.getAuthor()       << "\t\t"
+                  << b.getCategoryId()   << "\t\t"
+                  << b.getPublisher()    << "\t\t"
+                  << b.getPublishTime()  << "\t\t"
+                  << b.getPrice()        << '\n';
     }
 }
 ```
 
-> 说明：`'\t'` 是制表符（Tab），让各列稍微对齐一点。看起来不够整齐也没关系，功能正确最重要。
+> 说明：`'\t'` 是制表符（Tab），让各列稍微对齐一点。中文字符宽度不一，看起来不够整齐也没关系，功能正确最重要。
 
 ## 四、怎么测试你的代码
 
@@ -122,30 +135,31 @@ g++.exe -std=c++17 -g src/*.cpp -o build/main.exe
 - `error: no matching function for call to 'emplace_back'`：参数顺序或类型错了，对照代码检查
 
 ### 第二步：测试添加功能
-程序启动后会显示菜单，选择 `3`（添加图书），然后输入：
-```
+程序启动后会显示菜单，选择 `3`（添加图书），然后输入（书名可以带空格了）：
+```text
 请输入登录号: B001
-请输入书名: C++Primer
+请输入书名: C++ Primer
 请输入作者: Lippman
 请输入分类号: TP312
-请输入出版社: 人民邮电
-请输入出版时间: 2013
+请输入出版社: 人民邮电出版社
+请输入出版时间: 2013-05
 请输入价格: 99.0
 ```
 
 **预期输出**：
-```
+```text
 添加成功！当前共有 1 本书。
 ```
 
 ### 第三步：测试浏览功能
 回到菜单，选择 `4`（浏览全部图书）。
 
-**预期输出**：
-```
+**预期输出**（列用 Tab 对齐，中文宽度不一可能略有错位，属正常）：
+```text
 ===== 全部图书（共 1 本）=====
-登录号	书名	作者	分类号	出版社	出版时间	价格
-B001	C++Primer	Lippman	TP312	人民邮电	2013	99
+登录号		书名			作者		分类号		出版社		出版时间	价格
+----------------------------------------------------------------------------------------------------
+B001		C++ Primer		Lippman		TP312		人民邮电出版社		2013-05		99
 ```
 
 ### 第四步：多加几本测试
@@ -161,11 +175,13 @@ B001	C++Primer	Lippman	TP312	人民邮电	2013	99
 ## 五、容易踩的坑
 
 - **`displayAll` 后面的 `const` 不能删**：它表示「这个方法只看不改」。所以在 `displayAll` 里你**不能**往 `books` 加东西或改东西，只能读。这是头文件规定好的。
-  
-- **输入带空格会出问题**：`std::cin >>` 遇到空格就停。如果用户书名输入 `C++ Primer`，只会读到 `C++`，剩下的 `Primer` 会被当成下一个输入。初学阶段先约定不输空格。
-  
+
+- **第一个 `getline` 之前一定要 `ignore`**：菜单是用 `std::cin >> choice` 读的，缓冲区里留着一个换行符。不先 `std::cin.ignore(...)` 清掉，第一个字段（登录号）就会读到空行。代码里已经处理了。
+
+- **价格读取后别再混用 getline**：价格用 `std::cin >> price` 读，它会把后面的换行符留在缓冲区。本函数读完价格就结束了所以没事，但如果你之后还要 getline，记得再 ignore 一次。
+
 - **`emplace_back` 的参数顺序不能乱**：必须严格按 `id, title, author, categoryId, publisher, publishTime, price` 的顺序，错位了书的信息就乱了。
-  
+
 - **价格用 `double` 不要用 `int`**：价格可能是小数，`int` 会把 99.5 变成 99。
 
 ## 六、做完之后
@@ -185,8 +201,8 @@ B001	C++Primer	Lippman	TP312	人民邮电	2013	99
 
 ### 🚀 进阶挑战（选做）
 如果你提前做完，可以尝试：
-1. **改进输入体验**：用 `std::getline` 支持带空格的书名
-2. **美化输出格式**：用 `std::setw` 让表格对齐得更整齐
-3. **添加输入验证**：检查价格是否为负数，登录号是否重复
+1. **美化输出格式**：用 `std::setw` 配合中文宽度计算，让表格对齐得更整齐
+2. **添加输入验证**：检查价格是否为负数，登录号是否重复
+3. **登录号查重**：添加时检查登录号是否已存在，避免重复
 
 不会做也没关系，完成基本功能就很棒了！有问题随时问组里 💪
