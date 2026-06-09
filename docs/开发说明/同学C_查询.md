@@ -44,59 +44,6 @@ if (b.getTitle().find(关键字) != std::string_view::npos) {
 **4. 参数 `title` / `author` 是什么类型？**
 是 `std::string_view`，你可以把它当普通字符串用，直接拿去 `.find` 比较就行，不用转换。
 
-## 三、完整代码（可直接复制，建议自己读懂每一行）
-
-把下面整段替换掉 [BookManager_Search.cpp](../BookManager_Search.cpp) 里的内容：
-
-```cpp
-#include "BookManager.h"
-
-#include <iostream>
-#include <string_view>
-
-// Module C: 信息查询（同学C负责）
-
-// 按书名关键字查询：打印所有书名里包含该关键字的书
-void BookManager::searchByTitle(std::string_view title) const {
-    bool found = false;  // 记录有没有找到，用来最后给提示
-
-    for (const auto& b : books) {
-        // 如果这本书的书名里含有关键字
-        if (b.getTitle().find(title) != std::string_view::npos) {
-            std::cout << "登录号: " << b.getLoginId()
-                      << "  书名: " << b.getTitle()
-                      << "  作者: " << b.getAuthor()
-                      << "  价格: " << b.getPrice() << '\n';
-            found = true;
-        }
-    }
-
-    if (!found) {
-        std::cout << "没有找到书名包含「" << title << "」的图书。\n";
-    }
-}
-
-// 按作者关键字查询：打印所有作者里包含该关键字的书
-void BookManager::searchByAuthor(std::string_view author) const {
-    bool found = false;
-
-    for (const auto& b : books) {
-        if (b.getAuthor().find(author) != std::string_view::npos) {
-            std::cout << "登录号: " << b.getLoginId()
-                      << "  书名: " << b.getTitle()
-                      << "  作者: " << b.getAuthor()
-                      << "  价格: " << b.getPrice() << '\n';
-            found = true;
-        }
-    }
-
-    if (!found) {
-        std::cout << "没有找到作者包含「" << author << "」的图书。\n";
-    }
-}
-```
-
-> 两个函数几乎一模一样，区别只在于一个查 `getTitle()`、一个查 `getAuthor()`。看懂一个就懂另一个了。
 
 ## 四、怎么测试你的代码
 
@@ -128,11 +75,12 @@ B004, C++标准库, Josuttis, TP312, 人民邮电, 2015, 128
 
 选择「5. 按书名查询」，输入 `C++`
 
-**预期输出**：
+**预期输出**（每条会列出全部字段）：
 
 ```text
-登录号: B001  书名: C++Primer  作者: Lippman  价格: 99
-登录号: B004  书名: C++标准库  作者: Josuttis  价格: 128
+===== 查询结果 =====
+登录号: B001  书名: C++Primer  作者: Lippman  分类号: TP312  出版社: 人民邮电  出版时间: 2013  价格: 99
+登录号: B004  书名: C++标准库  作者: Josuttis  分类号: TP312  出版社: 人民邮电  出版时间: 2015  价格: 128
 ```
 
 再试试输入 `Python`，应该只找到一本。
@@ -144,7 +92,8 @@ B004, C++标准库, Josuttis, TP312, 人民邮电, 2015, 128
 **预期输出**：
 
 ```text
-登录号: B001  书名: C++Primer  作者: Lippman  价格: 99
+===== 查询结果 =====
+登录号: B001  书名: C++Primer  作者: Lippman  分类号: TP312  出版社: 人民邮电  出版时间: 2013  价格: 99
 ```
 
 ### 第五步：测试边界情况
