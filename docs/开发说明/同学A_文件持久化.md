@@ -47,56 +47,6 @@ C++ 用 `<fstream>` 这个头文件操作文件：
 **5. 这两个方法要返回 `bool`**
 头文件里约定 `loadFromFile`/`saveToFile` 返回 `bool`：成功返回 `true`，打不开文件返回 `false`。这样 `main.cpp` 才能知道操作有没有成功。
 
-## 三、完整代码（可直接复制，建议自己读懂每一行）
-
-把下面整段替换掉 [src/BookManager_IO.cpp](../../src/BookManager_IO.cpp) 里的内容：
-
-```cpp
-#include "BookManager.h"
-
-#include <fstream>    // 文件读写
-#include <iostream>   // 屏幕输出提示
-
-// Module A: 文件持久化（同学A负责）
-
-// 从文件加载图书：用流操作符 in >> b 逐本读取
-bool BookManager::loadFromFile(std::string_view filename) {
-    // string_view 要转成 string 才能传给 ifstream
-    std::ifstream in{std::string(filename)};
-    if (!in) {  // 打不开（比如文件不存在）
-        std::cout << "无法打开文件：" << filename << "\n";
-        return false;
-    }
-
-    books.clear();  // 关键！先清空内存，否则会和原来的数据叠加（重复）
-
-    Book b;
-    while (in >> b) {     // 每次读一本书，读不动了就停
-        books.push_back(b);
-    }
-
-    std::cout << "已从 " << filename << " 加载 " << books.size() << " 条记录。\n";
-    return true;
-}
-
-// 保存图书到文件：用流操作符 out << b 逐本写出
-bool BookManager::saveToFile(std::string_view filename) const {
-    std::ofstream out{std::string(filename)};
-    if (!out) {
-        std::cout << "无法打开文件：" << filename << "\n";
-        return false;
-    }
-
-    for (const auto& b : books) {
-        out << b << '\n';   // 每本书一行
-    }
-
-    std::cout << "已保存 " << books.size() << " 条记录到 " << filename << "\n";
-    return true;
-}
-```
-
-> **为什么这么简洁？** 拼接字段、按分隔符切分、`std::stod` 转价格——这些活儿都被 `Book` 的流操作符（在 [Book.cpp](../../src/Book.cpp) 里）包办了。你只管 `in >> b` 和 `out << b`。
 
 ## 四、怎么测试你的代码
 

@@ -44,67 +44,6 @@ if (b.getTitle().find(关键字) != std::string_view::npos) {
 **4. 参数 `title` / `author` 是什么类型？**
 是 `std::string_view`，你可以把它当普通字符串用，直接拿去 `.find` 比较就行，不用转换。
 
-## 三、完整代码（可直接复制，建议自己读懂每一行）
-
-把下面整段替换掉 [BookManager_Search.cpp](../BookManager_Search.cpp) 里的内容：
-
-```cpp
-#include "BookManager.h"
-
-#include <iostream>
-#include <string_view>
-
-// Module C: 信息查询（同学C负责）
-
-// 按书名关键字查询：打印所有书名里包含该关键字的书
-void BookManager::searchByTitle(std::string_view title) const {
-    bool found = false;  // 记录有没有找到，用来最后给提示
-
-    std::cout << "\n===== 查询结果 =====\n";
-    for (const auto& b : books) {
-        // 如果这本书的书名里含有关键字
-        if (b.getTitle().find(title) != std::string_view::npos) {
-            std::cout << "登录号: " << b.getLoginId()
-                      << "  书名: " << b.getTitle()
-                      << "  作者: " << b.getAuthor()
-                      << "  分类号: " << b.getCategoryId()
-                      << "  出版社: " << b.getPublisher()
-                      << "  出版时间: " << b.getPublishTime()
-                      << "  价格: " << b.getPrice() << '\n';
-            found = true;
-        }
-    }
-
-    if (!found) {
-        std::cout << "没有找到书名包含「" << title << "」的图书。\n";
-    }
-}
-
-// 按作者关键字查询：打印所有作者里包含该关键字的书
-void BookManager::searchByAuthor(std::string_view author) const {
-    bool found = false;
-
-    std::cout << "\n===== 查询结果 =====\n";
-    for (const auto& b : books) {
-        if (b.getAuthor().find(author) != std::string_view::npos) {
-            std::cout << "登录号: " << b.getLoginId()
-                      << "  书名: " << b.getTitle()
-                      << "  作者: " << b.getAuthor()
-                      << "  分类号: " << b.getCategoryId()
-                      << "  出版社: " << b.getPublisher()
-                      << "  出版时间: " << b.getPublishTime()
-                      << "  价格: " << b.getPrice() << '\n';
-            found = true;
-        }
-    }
-
-    if (!found) {
-        std::cout << "没有找到作者包含「" << author << "」的图书。\n";
-    }
-}
-```
-
-> 两个函数几乎一模一样，区别只在于一个查 `getTitle()`、一个查 `getAuthor()`。看懂一个就懂另一个了。
 
 ## 四、怎么测试你的代码
 
